@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ profile_user.username }}的个人资料 - {{ SITE_NAME }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-4">
+        <div class="card shadow-sm mb-4">
+            <div class="card-body text-center p-4">
+                {% if profile_user.profile.avatar %}
+                <img src="{{ profile_user.profile.avatar.url }}" class="rounded-circle mb-3" width="120" height="120" style="object-fit: cover;" alt="头像">
+                {% else %}
+                <div class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center mb-3" style="width: 120px; height: 120px; font-size: 3rem;">
+                    {{ profile_user.username|first|upper }}
+                </div>
+                {% endif %}
+                <h4>{{ profile_user.username }}</h4>
+                {% if profile_user.profile.bio %}
+                <p class="text-muted">{{ profile_user.profile.bio }}</p>
+                {% endif %}
+                {% if profile_user.profile.phone %}
+                <p class="mb-1"><i class="bi bi-telephone"></i> {{ profile_user.profile.phone }}</p>
+                {% endif %}
+                <p class="text-muted small">注册时间: {{ profile_user.date_joined|date:"Y-m-d" }}</p>
+                <p class="text-muted small">发布商品: {{ items.count }} 件</p>
+                {% if user == profile_user %}
+                <a href="{% url 'accounts:edit_profile' %}" class="btn btn-outline-primary"><i class="bi bi-pencil"></i> 编辑资料</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-8">
+        <h4 class="mb-3"><i class="bi bi-box"></i> {{ profile_user.username }}发布的商品</h4>
+        {% if items %}
+        <div class="row g-3">
+            {% for item in items %}
+            <div class="col-6 col-md-4">
+                <a href="{% url 'items:item_detail' item.pk %}" class="text-decoration-none">
+                    <div class="card h-100 shadow-sm border-0">
+                        {% if item.primary_image %}
+                        <img src="{{ item.primary_image }}" class="card-img-top" alt="{{ item.title }}" style="height: 150px; object-fit: cover;">
+                        {% else %}
+                        <div class="card-img-top bg-secondary d-flex align-items-center justify-content-center text-white" style="height: 150px;">
+                            <i class="bi bi-image fs-2"></i>
+                        </div>
+                        {% endif %}
+                        <div class="card-body p-2">
+                            <h6 class="card-title text-dark text-truncate">{{ item.title }}</h6>
+                            <p class="card-text fw-bold text-danger mb-0">¥{{ item.price }}</p>
+                            {% if item.status != 'active' %}
+                            <span class="badge bg-secondary">{{ item.get_status_display }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="bi bi-inbox fs-1 text-muted"></i>
+            <p class="text-muted mt-2">暂无发布商品</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

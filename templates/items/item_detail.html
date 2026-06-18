@@ -1,0 +1,146 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ item.title }} - {{ SITE_NAME }}{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'core:home' %}">首页</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'items:item_list' %}">商品列表</a></li>
+        <li class="breadcrumb-item active">{{ item.title|truncatechars:20 }}</li>
+    </ol>
+</nav>
+
+<div class="row">
+    <!-- Images -->
+    <div class="col-md-6 mb-4">
+        <div class="card shadow-sm">
+            <div class="card-body p-2">
+                {% if images %}
+                <div id="itemCarousel" class="carousel slide" data-bs-ride="carousel">
+                    <div class="carousel-inner">
+                        {% for img in images %}
+                        <div class="carousel-item {% if forloop.first %}active{% endif %}">
+                            <img src="{{ img.image.url }}" class="d-block w-100" alt="{{ item.title }}" style="height: 400px; object-fit: contain; background: #f8f9fa;">
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% if images|length > 1 %}
+                    <button class="carousel-control-prev" type="button" data-bs-target="#itemCarousel" data-bs-slide="prev">
+                        <span class="carousel-control-prev-icon bg-dark rounded-circle"></span>
+                    </button>
+                    <button class="carousel-control-next" type="button" data-bs-target="#itemCarousel" data-bs-slide="next">
+                        <span class="carousel-control-next-icon bg-dark rounded-circle"></span>
+                    </button>
+                    {% endif %}
+                </div>
+                {% else %}
+                <div class="bg-secondary d-flex align-items-center justify-content-center text-white rounded" style="height: 400px;">
+                    <i class="bi bi-image fs-1"></i>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Info -->
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <h3 class="card-title">{{ item.title }}</h3>
+                <p class="display-6 fw-bold text-danger">¥{{ item.price }}</p>
+                <hr>
+                <div class="d-flex gap-3 mb-3 flex-wrap">
+                    <span class="badge bg-info"><i class="bi bi-tag"></i> {{ item.category.name|default:'未分类' }}</span>
+                    <span class="badge bg-secondary"><i class="bi bi-star"></i> {{ item.get_condition_display }}</span>
+                    <span class="badge {% if item.status == 'active' %}bg-success{% else %}bg-secondary{% endif %}">
+                        {{ item.get_status_display }}
+                    </span>
+                </div>
+                <p class="card-text">{{ item.description|linebreaksbr }}</p>
+                <hr>
+                <div class="d-flex align-items-center mb-3">
+                    <div class="me-3">
+                        {% if item.seller.profile.avatar %}
+                        <img src="{{ item.seller.profile.avatar.url }}" class="rounded-circle" width="40" height="40" style="object-fit: cover;">
+                        {% else %}
+                        <div class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                            {{ item.seller.username|first|upper }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <a href="{% url 'accounts:user_profile' item.seller.username %}" class="text-decoration-none fw-bold">{{ item.seller.username }}</a>
+                        <br>
+                        <small class="text-muted">{{ item.created_at|date:"Y-m-d H:i" }} 发布</small>
+                    </div>
+                </div>
+
+                <div class="d-flex gap-2">
+                    {% if user.is_authenticated %}
+                        {% if user != item.seller %}
+                        <button class="btn btn-primary flex-fill" data-bs-toggle="collapse" data-bs-target="#contactForm">
+                            <i class="bi bi-chat"></i> 联系卖家
+                        </button>
+                        <a href="{% url 'items:toggle_favorite' item.pk %}" class="btn {% if is_favorited %}btn-danger{% else %}btn-outline-danger{% endif %}">
+                            <i class="bi {% if is_favorited %}bi-heart-fill{% else %}bi-heart{% endif %}"></i>
+                        </a>
+                        {% else %}
+                        <a href="{% url 'items:item_edit' item.pk %}" class="btn btn-outline-primary"><i class="bi bi-pencil"></i> 编辑</a>
+                        <a href="{% url 'items:item_delete' item.pk %}" class="btn btn-outline-danger"><i class="bi bi-trash"></i> 下架</a>
+                        {% endif %}
+                    {% else %}
+                    <a href="{% url 'accounts:login' %}?next={% url 'items:item_detail' item.pk %}" class="btn btn-primary flex-fill">
+                        <i class="bi bi-chat"></i> 登录后联系卖家
+                    </a>
+                    {% endif %}
+                </div>
+
+                <!-- Contact Form -->
+                {% if user.is_authenticated and user != item.seller %}
+                <div class="collapse mt-3" id="contactForm">
+                    <div class="card card-body border-primary">
+                        <h6><i class="bi bi-chat-dots"></i> 发送消息给卖家</h6>
+                        <form method="post">
+                            {% csrf_token %}
+                            <div class="mb-2">
+                                {{ form.content }}
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-sm w-100">发送</button>
+                        </form>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Related Items -->
+{% if related_items %}
+<section class="mt-5">
+    <h4 class="mb-3"><i class="bi bi-link"></i> 相关推荐</h4>
+    <div class="row g-3">
+        {% for item in related_items %}
+        <div class="col-6 col-md-3">
+            <a href="{% url 'items:item_detail' item.pk %}" class="text-decoration-none">
+                <div class="card h-100 shadow-sm border-0">
+                    {% if item.primary_image %}
+                    <img src="{{ item.primary_image }}" class="card-img-top" alt="{{ item.title }}" style="height: 150px; object-fit: cover;">
+                    {% else %}
+                    <div class="card-img-top bg-secondary d-flex align-items-center justify-content-center text-white" style="height: 150px;">
+                        <i class="bi bi-image fs-2"></i>
+                    </div>
+                    {% endif %}
+                    <div class="card-body p-2">
+                        <h6 class="card-title text-dark text-truncate">{{ item.title }}</h6>
+                        <p class="card-text fw-bold text-danger mb-0">¥{{ item.price }}</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+{% endblock %}
