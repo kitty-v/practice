@@ -1,0 +1,10 @@
+# Django
+*.pyc
+__pycache__/
+*.pyo
+*.sqlite3
+db.sqlite3
+media/
+staticfiles/
+.DS_Store
+*.log

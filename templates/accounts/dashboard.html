@@ -1,0 +1,139 @@
+{% extends 'base.html' %}
+
+{% block title %}我的面板 - {{ SITE_NAME }}{% endblock %}
+
+{% block content %}
+<h2 class="mb-4"><i class="bi bi-speedometer2"></i> 我的面板</h2>
+
+<div class="row g-4 mb-4">
+    <div class="col-md-4">
+        <div class="card bg-primary text-white shadow-sm">
+            <div class="card-body text-center">
+                <i class="bi bi-box fs-1"></i>
+                <h3>{{ my_items.count }}</h3>
+                <p class="mb-0">发布的商品</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-success text-white shadow-sm">
+            <div class="card-body text-center">
+                <i class="bi bi-heart fs-1"></i>
+                <h3>{{ my_favorites.count }}</h3>
+                <p class="mb-0">收藏的商品</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-warning text-white shadow-sm">
+            <div class="card-body text-center">
+                <i class="bi bi-chat-dots fs-1"></i>
+                <h3>{{ unread_count }}</h3>
+                <p class="mb-0">未读消息</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<ul class="nav nav-tabs mb-4" id="dashboardTab" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="my-items-tab" data-bs-toggle="tab" data-bs-target="#my-items" type="button">
+            <i class="bi bi-box"></i> 我的商品
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="favorites-tab" data-bs-toggle="tab" data-bs-target="#favorites" type="button">
+            <i class="bi bi-heart"></i> 我的收藏
+        </button>
+    </li>
+</ul>
+
+<div class="tab-content">
+    <!-- My Items -->
+    <div class="tab-pane fade show active" id="my-items">
+        <div class="d-flex justify-content-between mb-3">
+            <span class="text-muted">共 {{ my_items.count }} 件商品</span>
+            <a href="{% url 'items:item_create' %}" class="btn btn-primary btn-sm"><i class="bi bi-plus"></i> 发布商品</a>
+        </div>
+        {% if my_items %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>商品</th>
+                        <th>价格</th>
+                        <th>状态</th>
+                        <th>发布时间</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in my_items %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'items:item_detail' item.pk %}" class="text-decoration-none text-dark">
+                                {% if item.primary_image %}
+                                <img src="{{ item.primary_image }}" width="50" height="50" style="object-fit: cover;" class="rounded me-2">
+                                {% endif %}
+                                {{ item.title|truncatechars:20 }}
+                            </a>
+                        </td>
+                        <td class="fw-bold text-danger">¥{{ item.price }}</td>
+                        <td><span class="badge {% if item.status == 'active' %}bg-success{% elif item.status == 'sold' %}bg-secondary{% else %}bg-danger{% endif %}">{{ item.get_status_display }}</span></td>
+                        <td><small class="text-muted">{{ item.created_at|date:"Y-m-d H:i" }}</small></td>
+                        <td>
+                            {% if item.status == 'active' %}
+                            <a href="{% url 'items:item_edit' item.pk %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
+                            <a href="{% url 'items:item_delete' item.pk %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="bi bi-inbox fs-1 text-muted"></i>
+            <p class="text-muted mt-2">还没有发布商品</p>
+            <a href="{% url 'items:item_create' %}" class="btn btn-primary">立即发布</a>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Favorites -->
+    <div class="tab-pane fade" id="favorites">
+        <p class="text-muted mb-3">共收藏 {{ my_favorites.count }} 件商品</p>
+        {% if my_favorites %}
+        <div class="row g-3">
+            {% for fav in my_favorites %}
+            <div class="col-6 col-md-4 col-lg-3">
+                <a href="{% url 'items:item_detail' fav.item.pk %}" class="text-decoration-none">
+                    <div class="card h-100 shadow-sm border-0">
+                        {% if fav.item.primary_image %}
+                        <img src="{{ fav.item.primary_image }}" class="card-img-top" alt="{{ fav.item.title }}" style="height: 150px; object-fit: cover;">
+                        {% else %}
+                        <div class="card-img-top bg-secondary d-flex align-items-center justify-content-center text-white" style="height: 150px;">
+                            <i class="bi bi-image fs-2"></i>
+                        </div>
+                        {% endif %}
+                        <div class="card-body p-2">
+                            <h6 class="card-title text-dark text-truncate">{{ fav.item.title }}</h6>
+                            <p class="card-text fw-bold text-danger mb-0">¥{{ fav.item.price }}</p>
+                            <small class="text-muted">{{ fav.item.seller.username }}</small>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="bi bi-heart fs-1 text-muted"></i>
+            <p class="text-muted mt-2">还没有收藏任何商品</p>
+            <a href="{% url 'items:item_list' %}" class="btn btn-primary">去逛逛</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
