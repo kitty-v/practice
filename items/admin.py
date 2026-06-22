@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Category, Item, ItemImage, Favorite, Message
+from .models import Category, Item, ItemImage, Favorite, Message, Review
 
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
@@ -29,3 +29,9 @@ class FavoriteAdmin(admin.ModelAdmin):
 class MessageAdmin(admin.ModelAdmin):
     list_display = ('sender', 'receiver', 'item', 'is_read', 'created_at')
     list_filter = ('is_read',)
+
+@admin.register(Review)
+class ReviewAdmin(admin.ModelAdmin):
+    list_display = ('reviewer', 'reviewee', 'item', 'rating', 'created_at')
+    list_filter = ('rating',)
+    search_fields = ('reviewer__username', 'reviewee__username', 'item__title')

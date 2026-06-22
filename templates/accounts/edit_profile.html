@@ -1,16 +1,18 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}编辑资料 - {{ SITE_NAME }}{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
-    <div class="col-md-6">
-        <div class="card shadow-sm">
+    <div class="col-md-8">
+        <div class="card">
             <div class="card-body p-4">
-                <h3 class="mb-4"><i class="bi bi-pencil"></i> 编辑个人资料</h3>
+                <h3 class="h4 mb-4"><svg class="icon"><use href="#icon-pencil"></use></svg> 编辑个人资料</h3>
                 <form method="post" enctype="multipart/form-data">
                     {% csrf_token %}
                     {% for field in form %}
+                    {% if field.name != 'province' and field.name != 'city' and field.name != 'district' and field.name != 'street_address' %}
                     <div class="mb-3">
                         <label class="form-label">{{ field.label }}</label>
                         {{ field }}
@@ -21,7 +23,40 @@
                         <div class="form-text">{{ field.help_text }}</div>
                         {% endif %}
                     </div>
+                    {% endif %}
                     {% endfor %}
+
+                    <!-- 收货地址：省/市/区级联选择 -->
+                    <div class="mb-3">
+                        <label class="form-label">收货地址</label>
+                        <div class="row g-2 mb-2">
+                            <div class="col-md-4">
+                                <select id="selProvince" class="form-select">
+                                    <option value="">— 请选择省份 —</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <select id="selCity" class="form-select">
+                                    <option value="">— 请选择城市 —</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <select id="selDistrict" class="form-select">
+                                    <option value="">— 请选择区/县 —</option>
+                                </select>
+                            </div>
+                        </div>
+                        <!-- 隐藏字段用于提交 -->
+                        {{ form.province }}
+                        {{ form.city }}
+                        {{ form.district }}
+                    </div>
+                    <!-- 详细地址 -->
+                    <div class="mb-3">
+                        <label class="form-label">{{ form.street_address.label }}</label>
+                        {{ form.street_address }}
+                    </div>
+
                     <div class="d-flex gap-2">
                         <button type="submit" class="btn btn-primary">保存</button>
                         <a href="{% url 'accounts:profile' %}" class="btn btn-outline-secondary">取消</a>
@@ -31,4 +66,119 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'data/regions.js' %}"></script>
+<script>
+(function() {
+    // References
+    var selProvince = document.getElementById('selProvince');
+    var selCity     = document.getElementById('selCity');
+    var selDistrict = document.getElementById('selDistrict');
+    var hidProvince = document.getElementById('{{ form.province.id_for_label }}');
+    var hidCity     = document.getElementById('{{ form.city.id_for_label }}');
+    var hidDistrict = document.getElementById('{{ form.district.id_for_label }}');
+
+    // Populate provinces
+    function loadProvinces() {
+        selProvince.innerHTML = '<option value="">— 请选择省份 —</option>';
+        for (var i = 0; i < PROVINCES.length; i++) {
+            var opt = document.createElement('option');
+            opt.value = PROVINCES[i].name;
+            opt.textContent = PROVINCES[i].name;
+            selProvince.appendChild(opt);
+        }
+    }
+    loadProvinces();
+
+    // Load cities for a given province name
+    function loadCities(provinceName) {
+        selCity.innerHTML = '<option value="">— 请选择城市 —</option>';
+        selDistrict.innerHTML = '<option value="">— 请选择区/县 —</option>';
+
+        // Find province code
+        var provinceCode = null;
+        for (var i = 0; i < PROVINCES.length; i++) {
+            if (PROVINCES[i].name === provinceName) {
+                provinceCode = PROVINCES[i].code;
+                break;
+            }
+        }
+        if (!provinceCode || !CITIES[provinceCode]) return;
+
+        var cities = CITIES[provinceCode];
+        for (var i = 0; i < cities.length; i++) {
+            var opt = document.createElement('option');
+            opt.value = cities[i].name;
+            opt.textContent = cities[i].name;
+            selCity.appendChild(opt);
+        }
+    }
+
+    // Load districts for a given city name
+    function loadDistricts(cityName) {
+        selDistrict.innerHTML = '<option value="">— 请选择区/县 —</option>';
+
+        // Find city code
+        var cityCode = null;
+        var provinceName = selProvince.value;
+        var provinceCode = null;
+        for (var i = 0; i < PROVINCES.length; i++) {
+            if (PROVINCES[i].name === provinceName) {
+                provinceCode = PROVINCES[i].code;
+                break;
+            }
+        }
+        if (!provinceCode || !CITIES[provinceCode]) return;
+
+        var cities = CITIES[provinceCode];
+        for (var i = 0; i < cities.length; i++) {
+            if (cities[i].name === cityName) {
+                cityCode = cities[i].code;
+                break;
+            }
+        }
+        if (!cityCode || !DISTRICTS[cityCode]) return;
+
+        var dists = DISTRICTS[cityCode];
+        for (var i = 0; i < dists.length; i++) {
+            var opt = document.createElement('option');
+            opt.value = dists[i].name;
+            opt.textContent = dists[i].name;
+            selDistrict.appendChild(opt);
+        }
+    }
+
+    // Sync hidden fields on change
+    function syncAll() {
+        hidProvince.value = selProvince.value;
+        hidCity.value = selCity.value;
+        hidDistrict.value = selDistrict.value;
+    }
+
+    selProvince.addEventListener('change', function() {
+        loadCities(this.value);
+        syncAll();
+    });
+    selCity.addEventListener('change', function() {
+        loadDistricts(this.value);
+        syncAll();
+    });
+    selDistrict.addEventListener('change', syncAll);
+
+    // Pre-select existing values on page load
+    if (hidProvince.value) {
+        selProvince.value = hidProvince.value;
+        loadCities(hidProvince.value);
+        if (hidCity.value) {
+            selCity.value = hidCity.value;
+            loadDistricts(hidCity.value);
+            if (hidDistrict.value) {
+                selDistrict.value = hidDistrict.value;
+            }
+        }
+    }
+})();
+</script>
 {% endblock %}

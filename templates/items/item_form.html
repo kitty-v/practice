@@ -5,9 +5,9 @@
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-md-8">
-        <div class="card shadow-sm">
+        <div class="card">
             <div class="card-body p-4">
-                <h3 class="mb-4"><i class="bi bi-{% if action == '发布' %}plus-circle{% else %}pencil{% endif %}"></i> {{ action }}商品</h3>
+                <h3 class="h4 mb-4"><svg class="icon"><use href="#{% if action == '发布' %}icon-plus-circle{% else %}icon-pencil{% endif %}"></use></svg> {{ action }}商品</h3>
                 <form method="post" enctype="multipart/form-data">
                     {% csrf_token %}
                     {% for field in form %}

@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+
+{% block title %}订单详情 - {{ SITE_NAME }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-7">
+        <div class="card mb-3">
+            <div class="card-body p-4">
+                <h4 class="mb-3"><svg class="icon"><use href="#icon-tag"></use></svg> 订单详情</h4>
+
+                <!-- Order Status Timeline -->
+                <div class="d-flex justify-content-between mb-4">
+                    <span class="badge {% if order.status == 'pending' %}bg-warning{% elif order.status == 'paid' %}bg-info{% elif order.status == 'shipped' %}bg-primary{% elif order.status == 'completed' %}bg-success{% elif order.status == 'refunded' %}bg-secondary{% else %}bg-danger{% endif %} p-2" style="font-size:0.9rem">
+                        {{ order.get_status_display }}
+                    </span>
+                    <span class="meta">{{ order.created_at|date:"Y-m-d H:i" }}</span>
+                </div>
+
+                <!-- Item Info -->
+                <div class="d-flex gap-3 mb-4 p-3" style="background:var(--surface-tint);border-radius:12px">
+                    {% if order.item.primary_image %}
+                    <img src="{{ order.item.primary_image }}" width="80" height="80" style="object-fit:cover;border-radius:8px">
+                    {% endif %}
+                    <div>
+                        <h6><a href="{% url 'items:item_detail' order.item.pk %}" class="text-decoration-none text-dark">{{ order.item.title }}</a></h6>
+                        <p class="price price-md mb-1">¥{{ order.amount }}</p>
+                        <span class="meta">数量：{{ order.quantity }} 件</span>
+                        {% if order.quantity > 1 %}
+                        <span class="meta">单价：¥{{ order.item.price }}</span>
+                        {% endif %}
+                        <span class="meta ms-2">交易方式：{{ order.get_transaction_type_display }}</span>
+                    </div>
+                </div>
+
+                <!-- Buyer/Seller Info -->
+                <div class="row g-3 mb-3">
+                    <div class="col-6">
+                        <small class="text-muted d-block">买家</small>
+                        <strong>{{ order.buyer.username }}</strong>
+                    </div>
+                    <div class="col-6">
+                        <small class="text-muted d-block">卖家</small>
+                        <strong>{{ order.seller.username }}</strong>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="d-flex gap-2 flex-wrap order-actions">
+                    {% if user == order.buyer %}
+                        {% if order.status == 'pending' %}
+                        <form method="post" action="{% url 'items:order_cancel' order.pk %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-outline-secondary"><svg class="icon"><use href="#icon-x"></use></svg> 取消订单</button>
+                        </form>
+                        {% endif %}
+                        {% if order.status == 'paid' or order.status == 'shipped' %}
+                        <form method="post" action="{% url 'items:order_confirm' order.pk %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-success"><svg class="icon"><use href="#icon-check"></use></svg> 确认收货</button>
+                        </form>
+                        <form method="post" action="{% url 'items:order_refund_request' order.pk %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-outline-danger"><svg class="icon"><use href="#icon-alert"></use></svg> 申请退款</button>
+                        </form>
+                        {% endif %}
+                    {% elif user == order.seller %}
+                        {% if order.status == 'paid' %}
+                        <button class="btn btn-primary" data-bs-toggle="collapse" data-bs-target="#shipForm">
+                            <svg class="icon"><use href="#icon-truck"></use></svg> 确认发货
+                        </button>
+                        <form method="post" action="{% url 'items:order_offline' order.pk %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-outline-primary"><svg class="icon"><use href="#icon-handshake"></use></svg> 完成线下交易</button>
+                        </form>
+                        {% endif %}
+                        {% if order.status == 'refund_requested' %}
+                        <form method="post" action="{% url 'items:order_refund_approve' order.pk %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-warning"><svg class="icon"><use href="#icon-alert"></use></svg> 同意退款</button>
+                        </form>
+                        {% endif %}
+                    {% endif %}
+                </div>
+
+                {% if user == order.seller and order.status == 'paid' %}
+                <!-- Shipping Form -->
+                <div class="collapse mt-3" id="shipForm">
+                    <div class="card card-body border-primary">
+                        <h6 class="mb-3"><svg class="icon"><use href="#icon-truck"></use></svg> 填写运单信息</h6>
+                        <form method="post" action="{% url 'items:order_ship' order.pk %}">
+                            {% csrf_token %}
+                            <div class="mb-2">
+                                <label class="form-label">快递公司</label>
+                                <select name="tracking_company" class="form-select">
+                                    <option value="">— 请选择 —</option>
+                                    <option value="顺丰速运">顺丰速运</option>
+                                    <option value="中通快递">中通快递</option>
+                                    <option value="圆通速递">圆通速递</option>
+                                    <option value="韵达快递">韵达快递</option>
+                                    <option value="申通快递">申通快递</option>
+                                    <option value="极兔速递">极兔速递</option>
+                                    <option value="邮政EMS">邮政EMS</option>
+                                    <option value="京东物流">京东物流</option>
+                                    <option value="德邦快递">德邦快递</option>
+                                    <option value="其他">其他</option>
+                                </select>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label">运单号 <span class="text-danger">*</span></label>
+                                <input type="text" name="tracking_number" class="form-control" placeholder="请输入快递单号" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100"><svg class="icon"><use href="#icon-truck"></use></svg> 确认发货</button>
+                        </form>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Tracking Info -->
+                {% if order.tracking_number %}
+                <div class="mt-3 p-3" style="background:var(--surface-tint);border-radius:12px">
+                    <h6 class="mb-2"><svg class="icon"><use href="#icon-truck"></use></svg> 物流信息</h6>
+                    <p class="mb-1">
+                        {% if order.tracking_company %}<strong>{{ order.tracking_company }}</strong> — {% endif %}
+                        <code class="user-select-all">{{ order.tracking_number }}</code>
+                    </p>
+                    <small class="text-muted">卖家已发货，请留意物流进度</small>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <a href="{% url 'accounts:dashboard' %}" class="btn btn-outline-secondary">← 返回面板</a>
+    </div>
+</div>
+{% endblock %}

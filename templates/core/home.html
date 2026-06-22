@@ -1,88 +1,275 @@
 {% extends 'base.html' %}
-{% load static %}
+{% load static market_icons %}
 
-{% block content %}
-<!-- Hero Banner -->
-<div class="bg-primary bg-gradient rounded-3 p-5 mb-4 text-white text-center">
-    <h1 class="display-5 fw-bold">欢迎来到 {{ SITE_NAME }}</h1>
-    <p class="fs-5 mb-4">{{ SITE_DESCRIPTION }}</p>
-    <div class="d-flex justify-content-center gap-3">
-        <a href="{% url 'items:item_list' %}" class="btn btn-light btn-lg px-4">
-            <i class="bi bi-search"></i> 浏览商品
-        </a>
-        {% if user.is_authenticated %}
-        <a href="{% url 'items:item_create' %}" class="btn btn-outline-light btn-lg px-4">
-            <i class="bi bi-plus-circle"></i> 发布商品
-        </a>
-        {% endif %}
-    </div>
-</div>
+{% block content %}{% endblock %}
+{% block full_width %}
 
-<!-- Categories -->
-<section class="mb-5">
-    <h2 class="mb-4"><i class="bi bi-grid"></i> 商品分类</h2>
-    <div class="row g-3">
-        {% for cat in categories %}
-        <div class="col-4 col-md-3 col-lg-2">
-            <a href="{% url 'items:item_list' %}?category={{ cat.slug }}" class="text-decoration-none">
-                <div class="card text-center h-100 border-0 bg-light">
-                    <div class="card-body">
-                        <div class="fs-1 mb-2">{{ cat.icon }}</div>
-                        <h6 class="card-title text-dark">{{ cat.name }}</h6>
-                    </div>
-                </div>
+<!-- ============================= HERO 全屏大图 ============================= -->
+<section class="hero-fullscreen">
+    <canvas id="hero-fireworks" class="hero-fireworks-canvas"></canvas>
+    <img src="https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=1920&q=80" class="hero-bg-img d-none d-md-block" alt="">
+    <img src="https://images.unsplash.com/photo-1488459716781-31db52582fe9?w=800&q=80&fit=crop&crop=center" class="hero-bg-img d-md-none" alt="">
+    <div class="hero-overlay"></div>
+    <div class="hero-center">
+        <p class="hero-eyebrow">{{ SITE_DESCRIPTION }}</p>
+        <h1 class="hero-big-title">{{ SITE_NAME }}</h1>
+        <p class="hero-sub">在{{ SITE_NAME }}，把好东西交到下一个需要它的人手里</p>
+        <div class="hero-actions">
+            <a href="{% url 'items:item_list' %}" class="btn-hero-solid">
+                <svg class="icon"><use href="#icon-search"></use></svg> 进场淘货
             </a>
-        </div>
-        {% empty %}
-        <div class="col-12 text-center text-muted">
-            <p>暂无分类</p>
-        </div>
-        {% endfor %}
-    </div>
-</section>
-
-<!-- Recent Items -->
-<section>
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="mb-0"><i class="bi bi-clock-history"></i> 最新商品</h2>
-        <a href="{% url 'items:item_list' %}" class="btn btn-outline-primary">查看全部 <i class="bi bi-arrow-right"></i></a>
-    </div>
-    <div class="row g-4">
-        {% for item in recent_items %}
-        <div class="col-6 col-md-4 col-lg-3">
-            <a href="{% url 'items:item_detail' item.pk %}" class="text-decoration-none">
-                <div class="card h-100 shadow-sm border-0">
-                    {% if item.primary_image %}
-                    <img src="{{ item.primary_image }}" class="card-img-top" alt="{{ item.title }}" style="height: 200px; object-fit: cover;">
-                    {% else %}
-                    <div class="card-img-top bg-secondary d-flex align-items-center justify-content-center text-white" style="height: 200px;">
-                        <i class="bi bi-image fs-1"></i>
-                    </div>
-                    {% endif %}
-                    <div class="card-body">
-                        <h6 class="card-title text-dark text-truncate">{{ item.title }}</h6>
-                        <p class="card-text fw-bold text-danger fs-5">¥{{ item.price }}</p>
-                        <div class="d-flex justify-content-between align-items-center">
-                            <small class="text-muted">
-                                <i class="bi bi-person"></i> {{ item.seller.username }}
-                            </small>
-                            <small class="text-muted">
-                                <i class="bi bi-clock"></i> {{ item.created_at|timesince }}前
-                            </small>
-                        </div>
-                    </div>
-                </div>
-            </a>
-        </div>
-        {% empty %}
-        <div class="col-12 text-center py-5">
-            <i class="bi bi-inbox fs-1 text-muted"></i>
-            <p class="text-muted mt-2">还没有商品，快来发布第一件吧！</p>
             {% if user.is_authenticated %}
-            <a href="{% url 'items:item_create' %}" class="btn btn-primary">发布商品</a>
+            <a href="{% url 'items:item_create' %}" class="btn-hero-outline">
+                <svg class="icon"><use href="#icon-plus-circle"></use></svg> 出手一件
+            </a>
+            {% else %}
+            <a href="{% url 'accounts:register' %}" class="btn-hero-outline">
+                <svg class="icon"><use href="#icon-person-plus"></use></svg> 免费注册
+            </a>
             {% endif %}
         </div>
-        {% endfor %}
     </div>
 </section>
+
+<!-- ============================= 介绍文字 ============================= -->
+<section class="section-intro">
+    <div class="container">
+        <h2 class="intro-title">让每一件旧物找到新主人</h2>
+        <p class="intro-body">{{ SITE_NAME }} 是一个专注二手好物交易的平台。无论是电子数码、乐器、书籍还是家居用品，都能在这里找到下一个珍惜它的人。发布商品永久免费，交易简单透明。</p>
+    </div>
+</section>
+
+<!-- ============================= 分类图片卡片 ============================= -->
+<section class="section section-white pb-5">
+    <div class="container">
+        <div class="section-head-v2">
+            <div class="section-head-label">
+                <span class="section-tag">BROWSE</span>
+                <h2 class="section-title">逛逛分类</h2>
+                <p class="section-desc">从电子产品到乐器手作，按你感兴趣的方向找到下一件心头好。</p>
+            </div>
+            <a href="{% url 'items:item_list' %}" class="btn btn-outline-primary">
+                查看全部 <svg class="icon"><use href="#icon-arrow-right"></use></svg>
+            </a>
+        </div>
+        <div class="row g-3">
+            {% for cat in categories %}
+            <div class="col-4 col-md-3 col-lg-2">
+                <a href="{% url 'items:item_list' %}?category={{ cat.slug }}" class="text-decoration-none">
+                    <div class="stall">
+                        <div class="stall-icon-wrap">
+                            <svg class="icon"><use href="#icon-cat-{{ cat.name|cat_icon }}"></use></svg>
+                        </div>
+                        <span class="stall-name">{{ cat.name }}</span>
+                    </div>
+                </a>
+            </div>
+            {% empty %}
+            <div class="col-12 text-center empty-state py-4">
+                <svg class="icon"><use href="#icon-inbox"></use></svg>
+                <p class="text-muted mt-2 mb-0">分类货架还空着，去后台支个摊吧</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- ============================= 最新商品 ============================= -->
+<section class="section section-tint">
+    <div class="container">
+        <div class="section-head-v2">
+            <div class="section-head-label">
+                <span class="section-tag">FRESH</span>
+                <h2 class="section-title">
+                    <svg class="icon" style="color:var(--coral)"><use href="#icon-flame"></use></svg> 新鲜出炉
+                </h2>
+                <p class="section-desc">刚刚上架的好物，先到先得。</p>
+            </div>
+            <a href="{% url 'items:item_list' %}" class="btn btn-outline-primary">
+                查看全部 <svg class="icon"><use href="#icon-arrow-right"></use></svg>
+            </a>
+        </div>
+        <div class="row g-4">
+            {% for item in recent_items %}
+            <div class="col-6 col-md-4 col-lg-3">
+                <a href="{% url 'items:item_detail' item.pk %}" class="text-decoration-none">
+                    <div class="card market-card">
+                        {% if item.primary_image %}
+                        <div class="market-card-img-wrap position-relative">
+                            <img src="{{ item.primary_image }}" class="card-img-top" alt="{{ item.title }}">
+                            {% if item.stock == 0 %}
+                            <span class="badge bg-danger position-absolute top-0 end-0 m-2">售罄</span>
+                            {% endif %}
+                        </div>
+                        {% else %}
+                        <div class="img-placeholder">
+                            <svg class="icon"><use href="#icon-image"></use></svg>
+                        </div>
+                        {% endif %}
+                        <div class="card-body">
+                            <h6 class="card-title text-dark text-truncate">{{ item.title }}</h6>
+                            <p class="price price-md mb-2"><span class="currency">¥</span>{{ item.price }}</p>
+                            <div class="d-flex flex-wrap gap-1 mb-1">
+                                <span class="badge bg-light text-dark border"><svg class="icon"><use href="#icon-tag"></use></svg> {{ item.category.name|default:'未分类' }}</span>
+                                <span class="badge bg-light text-dark border">{{ item.get_condition_display }}</span>
+                                {% if item.stock > 0 %}
+                                <span class="badge bg-success">在售</span>
+                                {% else %}
+                                <span class="badge bg-danger">售罄</span>
+                                {% endif %}
+                            </div>
+                            <small class="meta"><svg class="icon"><use href="#icon-person"></use></svg> {{ item.seller.username }}</small>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            {% empty %}
+            <div class="col-12 text-center empty-state py-5">
+                <svg class="icon" style="width:3rem;height:3rem;color:var(--muted)"><use href="#icon-inbox"></use></svg>
+                <p class="text-muted mt-3">炉子还没开火，快来发布第一件好货吧！</p>
+                {% if user.is_authenticated %}
+                <a href="{% url 'items:item_create' %}" class="btn btn-primary mt-1">发布商品</a>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- ============================= 三大优势 ============================= -->
+<section class="section section-dark">
+    <div class="container">
+        <div class="section-head-v2 mb-0">
+            <div class="section-head-label">
+                <span class="section-tag" style="color:var(--accent);border-color:#2b2f3a;background:transparent">WHY {{ SITE_NAME }}</span>
+                <h2 class="section-title" style="color:var(--surface)">放心交易，从这三件事开始</h2>
+                <p class="section-desc" style="color:rgba(245,244,241,0.6)">无论是淘货还是出手，我们把流程尽量做简单。</p>
+            </div>
+        </div>
+        <div class="row g-4 mt-2">
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <div class="icon-wrap"><svg class="icon"><use href="#icon-tag"></use></svg></div>
+                    <h3>免费发布</h3>
+                    <p>发布商品不收取任何手续费，拍照、定价、上架，几分钟搞定。</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <div class="icon-wrap" style="background:var(--coral)"><svg class="icon"><use href="#icon-chat"></use></svg></div>
+                    <h3>站内私信</h3>
+                    <p>直接在站内联系卖家，问清楚成色和细节，再决定要不要下手。</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <div class="icon-wrap" style="background:var(--sage)"><svg class="icon"><use href="#icon-star"></use></svg></div>
+                    <h3>信誉评价</h3>
+                    <p>每一笔交易都能互相评价，攒下的口碑会留在你的主页上。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================= CTA ============================= -->
+<section class="section section-white">
+    <div class="container">
+        <div class="cta-band">
+            <div class="cta-band-deco"></div>
+            <div class="cta-band-inner">
+                <h2>把闲置的好东西，<br>交给需要它的人</h2>
+                <p>注册只要一分钟，发布商品永久免费。</p>
+                {% if user.is_authenticated %}
+                <a href="{% url 'items:item_create' %}" class="btn btn-cta btn-lg">
+                    <svg class="icon"><use href="#icon-plus-circle"></use></svg> 发布第一件商品
+                </a>
+                {% else %}
+                <a href="{% url 'accounts:register' %}" class="btn btn-cta btn-lg">
+                    <svg class="icon"><use href="#icon-person-plus"></use></svg> 立即免费注册
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1"></script>
+<script>
+(function() {
+    const canvas = document.getElementById('hero-fireworks');
+    if (!canvas) return;
+
+    const resize = () => {
+        canvas.width = canvas.parentElement.offsetWidth;
+        canvas.height = canvas.parentElement.offsetHeight;
+    };
+    resize();
+    window.addEventListener('resize', resize);
+
+    // 创建绑定到我们 canvas 的 confetti 实例
+    const shoot = confetti.create(canvas, { resize: true });
+
+    const colors = ['#c9a14a', '#e3c87a', '#c8ff5c', '#aee23f', '#ff5b3c'];
+    let count = 0;
+
+    function burst() {
+        const origin = count % 2 === 0
+            ? { x: 0.15, y: 0.5 + Math.random() * 0.3 }
+            : { x: 0.85, y: 0.3 + Math.random() * 0.3 };
+        count++;
+
+        shoot({
+            particleCount: 40 + Math.floor(Math.random() * 40),
+            angle: origin.x < 0.5 ? 60 + Math.random() * 20 : 100 + Math.random() * 20,
+            spread: 60 + Math.random() * 40,
+            origin,
+            colors: [colors[Math.floor(Math.random() * colors.length)],
+                     colors[Math.floor(Math.random() * colors.length)]],
+            startVelocity: 28 + Math.random() * 16,
+            gravity: 0.5 + Math.random() * 0.2,
+            ticks: 200,
+            shapes: ['circle', 'square'],
+        });
+    }
+
+    let timer;
+    function schedule() {
+        timer = setTimeout(() => {
+            burst();
+            schedule();
+        }, 1500 + Math.random() * 2000);
+    }
+    schedule();
+
+    const hero = canvas.parentElement;
+    hero.addEventListener('click', function(e) {
+        const rect = hero.getBoundingClientRect();
+        shoot({
+            particleCount: 80,
+            spread: 80,
+            origin: {
+                x: (e.clientX - rect.left) / rect.width,
+                y: (e.clientY - rect.top) / rect.height,
+            },
+            colors,
+            startVelocity: 34,
+            gravity: 0.6,
+            ticks: 250,
+            shapes: ['circle', 'square'],
+        });
+    });
+
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+            clearTimeout(timer);
+        } else {
+            schedule();
+        }
+    });
+})();
+</script>
 {% endblock %}

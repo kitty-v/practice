@@ -1,20 +1,22 @@
 from django import forms
-from .models import Item, ItemImage, Message
+from .models import Item, ItemImage, Message, Review
 
 class ItemForm(forms.ModelForm):
     class Meta:
         model = Item
-        fields = ('title', 'description', 'price', 'condition', 'category')
+        fields = ('title', 'description', 'price', 'condition', 'category', 'stock')
         labels = {
             'title': '商品标题',
             'description': '商品描述',
             'price': '价格 (元)',
             'condition': '成色',
             'category': '分类',
+            'stock': '库存数量',
         }
         widgets = {
             'description': forms.Textarea(attrs={'rows': 4}),
             'price': forms.NumberInput(attrs={'step': '0.01', 'min': '0'}),
+            'stock': forms.NumberInput(attrs={'min': '0'}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -39,3 +41,18 @@ class MessageForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['content'].widget.attrs['class'] = 'form-control'
+
+class ReviewForm(forms.ModelForm):
+    class Meta:
+        model = Review
+        fields = ('rating', 'comment')
+        labels = {'rating': '评分', 'comment': '评价内容'}
+        widgets = {
+            'rating': forms.Select(),
+            'comment': forms.Textarea(attrs={'rows': 3, 'placeholder': '说说这次交易的体验吧...'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            field.widget.attrs.setdefault('class', 'form-control')

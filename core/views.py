@@ -1,4 +1,5 @@
 from django.shortcuts import render
+from django.contrib.auth.models import User
 from items.models import Item, Category
 
 def home(request):
@@ -7,4 +8,7 @@ def home(request):
     return render(request, 'core/home.html', {
         'categories': categories,
         'recent_items': recent_items,
+        'total_items': Item.objects.filter(status='active').count(),
+        'total_users': User.objects.count(),
+        'category_count': categories.count(),
     })

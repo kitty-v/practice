@@ -23,15 +23,25 @@ class RegisterForm(UserCreationForm):
 class ProfileForm(forms.ModelForm):
     class Meta:
         model = Profile
-        fields = ('phone', 'avatar', 'bio')
+        fields = ('phone', 'avatar', 'bio', 'province', 'city', 'district', 'street_address')
         labels = {
             'phone': '手机号',
             'avatar': '头像',
             'bio': '个人简介',
+            'province': '省份',
+            'city': '城市',
+            'district': '区/县',
+            'street_address': '详细地址',
+        }
+        widgets = {
+            'province': forms.HiddenInput(),
+            'city': forms.HiddenInput(),
+            'district': forms.HiddenInput(),
+            'street_address': forms.TextInput(attrs={'placeholder': '街道、门牌号、楼层等'}),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         for field in self.fields.values():
-            if field.widget.__class__.__name__ != 'ClearableFileInput':
+            if field.widget.__class__.__name__ not in ('ClearableFileInput', 'HiddenInput'):
                 field.widget.attrs.setdefault('class', 'form-control')

@@ -15,7 +15,7 @@ class Category(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = slugify(self.name)
+            self.slug = slugify(self.name, allow_unicode=True)
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -42,6 +42,9 @@ class Item(models.Model):
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, verbose_name='分类', related_name='items')
     seller = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='卖家', related_name='items')
     status = models.CharField('状态', max_length=10, choices=STATUS_CHOICES, default='active')
+    views = models.PositiveIntegerField('浏览量', default=0)
+    stock = models.PositiveIntegerField('库存', default=1)
+    sold_count = models.PositiveIntegerField('已售', default=0)
     created_at = models.DateTimeField('发布时间', auto_now_add=True)
     updated_at = models.DateTimeField('更新时间', auto_now=True)
 
@@ -103,3 +106,73 @@ class Message(models.Model):
 
     def __str__(self):
         return f'{self.sender.username} -> {self.receiver.username}: {self.content[:20]}'
+
+class Review(models.Model):
+    RATING_CHOICES = [(i, f'{i} 星') for i in range(1, 6)]
+
+    item = models.ForeignKey(Item, on_delete=models.CASCADE, related_name='reviews', verbose_name='关联商品')
+    reviewer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reviews_given', verbose_name='评价人')
+    reviewee = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reviews_received', verbose_name='被评价人')
+    parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='replies', verbose_name='回复目标')
+    rating = models.PositiveSmallIntegerField('评分', choices=RATING_CHOICES, default=5)
+    comment = models.TextField('评价内容', max_length=500, blank=True)
+    created_at = models.DateTimeField('评价时间', auto_now_add=True)
+
+    class Meta:
+        verbose_name = '评价'
+        verbose_name_plural = '评价'
+        ordering = ['-created_at']
+        # unique_together = ('item', 'reviewer', 'reviewee')  # removed so seller can reply multiple times
+
+    def __str__(self):
+        return f'{self.reviewer.username} 对 {self.reviewee.username} 的评价（{self.rating}星）'
+
+
+class Order(models.Model):
+    STATUS_CHOICES = [
+        ('pending', '待付款'),
+        ('paid', '已付款'),
+        ('shipped', '已发货'),
+        ('completed', '已完成'),
+        ('refund_requested', '申请退款'),
+        ('refunded', '已退款'),
+        ('cancelled', '已取消'),
+    ]
+    TRANSACTION_CHOICES = [
+        ('online', '线上交易'),
+        ('offline', '线下交易'),
+    ]
+
+    buyer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='orders_as_buyer', verbose_name='买家')
+    seller = models.ForeignKey(User, on_delete=models.CASCADE, related_name='orders_as_seller', verbose_name='卖家')
+    item = models.ForeignKey(Item, on_delete=models.CASCADE, related_name='orders', verbose_name='商品')
+    status = models.CharField('状态', max_length=20, choices=STATUS_CHOICES, default='pending')
+    transaction_type = models.CharField('交易方式', max_length=10, choices=TRANSACTION_CHOICES, default='online')
+    quantity = models.PositiveIntegerField('数量', default=1)
+    amount = models.DecimalField('金额', max_digits=10, decimal_places=2)
+    tracking_company = models.CharField('快递公司', max_length=50, blank=True)
+    tracking_number = models.CharField('运单号', max_length=100, blank=True)
+    created_at = models.DateTimeField('创建时间', auto_now_add=True)
+    updated_at = models.DateTimeField('更新时间', auto_now=True)
+
+    class Meta:
+        verbose_name = '订单'
+        verbose_name_plural = '订单'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'{self.buyer.username} x {self.item.title} ({self.get_status_display()})'
+
+class RevenueRecord(models.Model):
+    seller = models.ForeignKey(User, on_delete=models.CASCADE, related_name='revenue_records', verbose_name='卖家')
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='revenue_records', verbose_name='关联订单')
+    amount = models.DecimalField('金额', max_digits=10, decimal_places=2)
+    created_at = models.DateTimeField('记录时间', auto_now_add=True)
+
+    class Meta:
+        verbose_name = '收益记录'
+        verbose_name_plural = '收益记录'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'{self.seller.username} +¥{self.amount}'

@@ -2,9 +2,20 @@
 Django settings for config project.
 """
 
+import os
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# 极简 .env 加载（无需额外依赖）：若存在 .env 文件，则加载其中的环境变量
+_env_file = BASE_DIR / '.env'
+if _env_file.exists():
+    for _line in _env_file.read_text(encoding='utf-8').splitlines():
+        _line = _line.strip()
+        if not _line or _line.startswith('#') or '=' not in _line:
+            continue
+        _key, _value = _line.split('=', 1)
+        os.environ.setdefault(_key.strip(), _value.strip())
 
 SECRET_KEY = 'django-insecure-by+k7*$)y!ks7+z1ox5x@o6ornbn*&04v-d=byk8q4qiylr@sd'
 DEBUG = True
@@ -55,8 +66,15 @@ WSGI_APPLICATION = 'config.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': os.environ.get('DB_NAME', 'class_project'),
+        'USER': os.environ.get('DB_USER', 'class_project'),
+        'PASSWORD': os.environ.get('DB_PASSWORD', 'class_project'),
+        'HOST': os.environ.get('DB_HOST', '127.0.0.1'),
+        'PORT': os.environ.get('DB_PORT', '3306'),
+        'OPTIONS': {
+            'charset': 'utf8mb4',
+        },
     }
 }
 

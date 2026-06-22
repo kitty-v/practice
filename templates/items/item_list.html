@@ -1,37 +1,34 @@
 {% extends 'base.html' %}
-{% load static %}
+{% load static market_icons %}
 
-{% block title %}全部商品 - {{ SITE_NAME }}{% endblock %}
+{% block title %}{% if hot_mode %}热门商品{% else %}全部商品{% endif %} - {{ SITE_NAME }}{% endblock %}
 
 {% block content %}
 <div class="row">
     <!-- Sidebar Filters -->
     <div class="col-md-3 mb-4">
-        <div class="card shadow-sm">
+        <div class="card">
             <div class="card-body">
-                <h5><i class="bi bi-funnel"></i> 筛选</h5>
+                <h5 class="h6 mb-3"><svg class="icon"><use href="#icon-funnel"></use></svg> 筛选货摊</h5>
                 <hr>
-                <!-- Search -->
-                <form method="GET" action="{% url 'items:item_list' %}">
+                <form method="GET" action="{% if hot_mode %}{% url 'items:hot_items' %}{% else %}{% url 'items:item_list' %}{% endif %}">
                     <div class="mb-3">
-                        <label class="form-label fw-bold">关键词</label>
+                        <label class="form-label">关键词</label>
                         <input type="text" name="q" class="form-control" value="{{ query }}" placeholder="搜索...">
                     </div>
-                    <!-- Category -->
                     <div class="mb-3">
-                        <label class="form-label fw-bold">分类</label>
+                        <label class="form-label">分类</label>
                         <select name="category" class="form-select">
                             <option value="">全部分类</option>
                             {% for cat in categories %}
                             <option value="{{ cat.slug }}" {% if current_category == cat.slug %}selected{% endif %}>
-                                {{ cat.icon }} {{ cat.name }}
+                                {{ cat.name }}
                             </option>
                             {% endfor %}
                         </select>
                     </div>
-                    <!-- Condition -->
                     <div class="mb-3">
-                        <label class="form-label fw-bold">成色</label>
+                        <label class="form-label">成色</label>
                         <select name="condition" class="form-select">
                             <option value="">全部</option>
                             <option value="new" {% if current_condition == 'new' %}selected{% endif %}>全新</option>
@@ -41,16 +38,15 @@
                             <option value="poor" {% if current_condition == 'poor' %}selected{% endif %}>较差</option>
                         </select>
                     </div>
-                    <!-- Price Range -->
                     <div class="mb-3">
-                        <label class="form-label fw-bold">价格范围</label>
+                        <label class="form-label">价格范围</label>
                         <div class="input-group">
                             <input type="number" name="min_price" class="form-control" placeholder="最低" value="{{ min_price }}" min="0">
-                            <span class="input-group-text">-</span>
+                            <span class="input-group-text">—</span>
                             <input type="number" name="max_price" class="form-control" placeholder="最高" value="{{ max_price }}" min="0">
                         </div>
                     </div>
-                    <button type="submit" class="btn btn-primary w-100"><i class="bi bi-search"></i> 搜索</button>
+                    <button type="submit" class="btn btn-primary w-100"><svg class="icon"><use href="#icon-search"></use></svg> 搜索</button>
                     <a href="{% url 'items:item_list' %}" class="btn btn-outline-secondary w-100 mt-2">清除筛选</a>
                 </form>
             </div>
@@ -60,8 +56,8 @@
     <!-- Items Grid -->
     <div class="col-md-9">
         <div class="d-flex justify-content-between align-items-center mb-3">
-            <h4 class="mb-0"><i class="bi bi-grid"></i> 全部商品</h4>
-            <span class="text-muted">共 {{ items.count }} 件商品</span>
+            <h4 class="h5 mb-0"><svg class="icon"><use href="#{% if hot_mode %}icon-flame{% else %}icon-grid{% endif %}"></use></svg> {% if hot_mode %}热门商品{% else %}全部商品{% endif %}</h4>
+            <span class="eyebrow">共 {{ items.count }} 件</span>
         </div>
 
         {% if items %}
@@ -69,22 +65,32 @@
             {% for item in items %}
             <div class="col-6 col-md-4">
                 <a href="{% url 'items:item_detail' item.pk %}" class="text-decoration-none">
-                    <div class="card h-100 shadow-sm border-0">
+                    <div class="card market-card">
                         {% if item.primary_image %}
-                        <img src="{{ item.primary_image }}" class="card-img-top" alt="{{ item.title }}" style="height: 180px; object-fit: cover;">
+                        <div class="position-relative">
+                            <img src="{{ item.primary_image }}" class="card-img-top" alt="{{ item.title }}">
+                            {% if item.stock == 0 %}
+                            <span class="badge bg-danger position-absolute top-0 end-0 m-2">售罄</span>
+                            {% endif %}
+                        </div>
                         {% else %}
-                        <div class="card-img-top bg-secondary d-flex align-items-center justify-content-center text-white" style="height: 180px;">
-                            <i class="bi bi-image fs-1"></i>
+                        <div class="img-placeholder">
+                            <svg class="icon"><use href="#icon-image"></use></svg>
                         </div>
                         {% endif %}
                         <div class="card-body">
                             <h6 class="card-title text-dark text-truncate">{{ item.title }}</h6>
-                            <p class="card-text fw-bold text-danger fs-5">¥{{ item.price }}</p>
-                            <div class="d-flex justify-content-between align-items-center">
-                                <small class="text-muted"><i class="bi bi-person"></i> {{ item.seller.username }}</small>
-                                <small class="text-muted"><i class="bi bi-tag"></i> {{ item.category.name|default:'未分类' }}</small>
+                            <p class="price price-md mb-2"><span class="currency">¥</span>{{ item.price }}</p>
+                            <div class="d-flex flex-wrap gap-1 mb-1">
+                                <span class="badge bg-light text-dark border"><svg class="icon"><use href="#icon-tag"></use></svg> {{ item.category.name|default:'未分类' }}</span>
+                                <span class="badge bg-light text-dark border">{{ item.get_condition_display }}</span>
+                                {% if item.stock > 0 %}
+                                <span class="badge bg-success">在售</span>
+                                {% else %}
+                                <span class="badge bg-danger">售罄</span>
+                                {% endif %}
                             </div>
-                            <small class="text-muted">{{ item.get_condition_display }}</small>
+                            <small class="meta"><svg class="icon"><use href="#icon-person"></use></svg> {{ item.seller.username }}</small>
                         </div>
                     </div>
                 </a>
@@ -92,8 +98,8 @@
             {% endfor %}
         </div>
         {% else %}
-        <div class="text-center py-5">
-            <i class="bi bi-inbox fs-1 text-muted"></i>
+        <div class="text-center empty-state py-5">
+            <svg class="icon"><use href="#icon-inbox"></use></svg>
             <p class="text-muted mt-2">没有找到符合条件的商品</p>
             <a href="{% url 'items:item_list' %}" class="btn btn-primary">查看全部</a>
         </div>

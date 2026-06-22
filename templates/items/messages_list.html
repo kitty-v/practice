@@ -3,74 +3,65 @@
 {% block title %}我的消息 - {{ SITE_NAME }}{% endblock %}
 
 {% block content %}
-<h2 class="mb-4"><i class="bi bi-chat-dots"></i> 我的消息</h2>
+<h2 class="h4 mb-4"><svg class="icon"><use href="#icon-chat-dots"></use></svg> 我的消息</h2>
 
-<ul class="nav nav-tabs mb-4" id="msgTab" role="tablist">
-    <li class="nav-item" role="presentation">
-        <button class="nav-link active" id="received-tab" data-bs-toggle="tab" data-bs-target="#received" type="button">
-            <i class="bi bi-inbox"></i> 收到的消息
-        </button>
-    </li>
-    <li class="nav-item" role="presentation">
-        <button class="nav-link" id="sent-tab" data-bs-toggle="tab" data-bs-target="#sent" type="button">
-            <i class="bi bi-send"></i> 已发送
-        </button>
-    </li>
-</ul>
-
-<div class="tab-content">
-    <!-- Received -->
-    <div class="tab-pane fade show active" id="received">
-        {% if received %}
-        <div class="list-group">
-            {% for msg in received %}
-            <div class="list-group-item list-group-item-action {% if not msg.is_read %}list-group-item-primary fw-bold{% endif %}">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <strong>{{ msg.sender.username }}</strong>
-                        {% if msg.item %}
-                        <span class="text-muted">关于: <a href="{% url 'items:item_detail' msg.item.pk %}">{{ msg.item.title }}</a></span>
-                        {% endif %}
-                    </div>
-                    <small class="text-muted">{{ msg.created_at|date:"Y-m-d H:i" }}</small>
+{% if conversation_list %}
+<div class="row g-0 chat-layout">
+    <!-- Conversation list -->
+    <div class="col-md-4 conversation-list">
+        {% for conv in conversation_list %}
+        <a href="?with={{ conv.partner.id }}" class="conversation-item text-decoration-none {% if active_conv and active_conv.partner.id == conv.partner.id %}active{% endif %}">
+            <div class="conversation-avatar">{{ conv.partner.username|first|upper }}</div>
+            <div class="conversation-info">
+                <div class="conversation-top">
+                    <span class="conversation-name">{{ conv.partner.username }}</span>
+                    <span class="conversation-time">{{ conv.last.created_at|date:"m-d H:i" }}</span>
                 </div>
-                <p class="mb-0 mt-1 {% if not msg.is_read %}fw-bold{% endif %}">{{ msg.content }}</p>
+                <div class="conversation-preview">{{ conv.last.content|truncatechars:24 }}</div>
             </div>
-            {% endfor %}
-        </div>
-        {% else %}
-        <div class="text-center py-5">
-            <i class="bi bi-inbox fs-1 text-muted"></i>
-            <p class="text-muted mt-2">暂无收到的消息</p>
-        </div>
-        {% endif %}
+            {% if conv.unread %}<span class="badge bg-danger conversation-unread">{{ conv.unread }}</span>{% endif %}
+        </a>
+        {% endfor %}
     </div>
 
-    <!-- Sent -->
-    <div class="tab-pane fade" id="sent">
-        {% if sent %}
-        <div class="list-group">
-            {% for msg in sent %}
-            <div class="list-group-item list-group-item-action">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        发送给 <strong>{{ msg.receiver.username }}</strong>
-                        {% if msg.item %}
-                        <span class="text-muted">关于: <a href="{% url 'items:item_detail' msg.item.pk %}">{{ msg.item.title }}</a></span>
-                        {% endif %}
-                    </div>
-                    <small class="text-muted">{{ msg.created_at|date:"Y-m-d H:i" }}</small>
+    <!-- Active thread -->
+    <div class="col-md-8 chat-panel">
+        {% if active_conv %}
+        <div class="chat-header">
+            <div class="conversation-avatar">{{ active_conv.partner.username|first|upper }}</div>
+            <span class="fw-bold">{{ active_conv.partner.username }}</span>
+        </div>
+        <div class="chat-thread" id="chatThread">
+            {% for msg in active_conv.messages %}
+            <div class="bubble-row {% if msg.sender_id == user.id %}sent{% else %}received{% endif %}">
+                <div class="bubble">
+                    {% if msg.item %}<a href="{% url 'items:item_detail' msg.item.pk %}" class="bubble-item">关于: {{ msg.item.title }}</a>{% endif %}
+                    <p class="mb-1">{{ msg.content }}</p>
+                    <span class="bubble-time">{{ msg.created_at|date:"m-d H:i" }}</span>
                 </div>
-                <p class="mb-0 mt-1">{{ msg.content }}</p>
             </div>
             {% endfor %}
         </div>
-        {% else %}
-        <div class="text-center py-5">
-            <i class="bi bi-send fs-1 text-muted"></i>
-            <p class="text-muted mt-2">暂未发送消息</p>
-        </div>
+        <form method="post" action="{% url 'items:message_reply' %}" class="chat-input-bar">
+            {% csrf_token %}
+            <input type="hidden" name="receiver_id" value="{{ active_conv.partner.id }}">
+            <textarea name="content" class="form-control" rows="1" placeholder="给 {{ active_conv.partner.username }} 发消息..." required></textarea>
+            <button type="submit" class="btn btn-primary"><svg class="icon"><use href="#icon-send"></use></svg></button>
+        </form>
         {% endif %}
     </div>
 </div>
+{% else %}
+<div class="text-center empty-state py-5">
+    <svg class="icon"><use href="#icon-inbox"></use></svg>
+    <p class="text-muted mt-2">还没有任何消息，去商品详情页联系一下卖家吧</p>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  var thread = document.getElementById('chatThread');
+  if (thread) { thread.scrollTop = thread.scrollHeight; }
+</script>
 {% endblock %}
