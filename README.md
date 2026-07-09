@@ -1,7 +1,7 @@
 # Start our go lanuage study
 > [!TIP]
-**Keep going
-**study every day
+> **Keep going**
+> **study every day**
 
 ---
 
