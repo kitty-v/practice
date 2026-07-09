@@ -1,7 +1,7 @@
 # Start our go language study
 
 > [!TIP]
-> **Keep going**
+> **Keep going**<br>
 > **study every day**
 
 ---
