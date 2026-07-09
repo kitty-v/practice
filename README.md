@@ -7,11 +7,7 @@
 ---
 
 > [!IMPORTANT]
-> **安装 Go 请使用官方最新版本，不要用 apt 安装！**
-> 
-> apt 仓库中的版本通常过旧，会导致某些特性不支持。
-> 
-> 推荐方式：
+> please use url to download golang
 > ```bash
 > wget https://go.dev/dl/go1.22.5.linux-amd64.tar.gz
 > sudo rm -rf /usr/local/go
@@ -22,7 +18,25 @@
 
 ---
 
-## 项目初始化
+## project before exec blow in your termainal
 ```bash
 go mod init practice
 go get github.com/go-sql-driver/mysql
+
+## start our first go file
+```go
+package main
+import "fmt"
+func main(){
+    const name = "Jac"
+    const age = 21
+    var a int
+    a = 1
+    fmt.Println(name)
+    
+    for a <= 10 {
+    fmt.Println(a)
+    a++
+}
+
+}
