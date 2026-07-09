@@ -22,7 +22,7 @@
 ```bash
 go mod init practice
 go get github.com/go-sql-driver/mysql
-
+```
 ## start our first go file
 ```go
 package main
@@ -38,5 +38,5 @@ func main(){
     fmt.Println(a)
     a++
 }
-
 }
+```
