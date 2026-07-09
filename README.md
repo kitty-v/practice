@@ -5,7 +5,7 @@
 
 ---
 
-[!IMPORTTANT]
+[!IMPORTANT]
 - 
 ```bash
 sudo apt install golang
